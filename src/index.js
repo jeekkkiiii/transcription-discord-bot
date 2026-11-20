@@ -51,7 +51,7 @@ async function handleJoin(interaction) {
   const session = new TranscriptionSession(voiceChannel, textChannel);
   await session.start();
   await interaction.editReply(
-    `🎙️ Now transcribing ${voiceChannel} into this channel. **Everyone in the call is being transcribed.** Use \`/leave\` to stop.`,
+    `🎙️ Emaq is now transcribing ${voiceChannel} into this channel. **Everyone in the call is being transcribed.** Use \`/leave\` to stop.`,
   );
 }
 

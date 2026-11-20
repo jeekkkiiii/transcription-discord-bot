@@ -1,6 +1,6 @@
-# Transcription Discord Bot
+# Emaq
 
-A Discord bot that joins your voice channel and posts a live transcript of what everyone says into a text channel:
+Emaq is a Discord bot that joins your voice channel and posts a live transcript of what everyone says into a text channel:
 
 > 21:04:12 **Jack**: okay are we starting the raid now or after dinner
 > 21:04:15 **Sam**: after dinner, I need ten minutes
@@ -18,7 +18,7 @@ You need **Node.js 22.12+** and an API key for a speech-to-text service (OpenAI 
 
 ### 1. Create the bot in Discord
 
-1. Go to <https://discord.com/developers/applications> → **New Application**.
+1. Go to <https://discord.com/developers/applications> → **New Application**, and name it **Emaq**. (This name, and the avatar you upload on the **Bot** page, is what your server sees.)
 2. On **General Information**, copy the **Application ID** → `DISCORD_CLIENT_ID`.
 3. On **Bot**, click **Reset Token** and copy it → `DISCORD_TOKEN`. (No privileged intents are needed.)
 

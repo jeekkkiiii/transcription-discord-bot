@@ -1,7 +1,7 @@
 {
-  "name": "transcription-discord-bot",
+  "name": "emaq",
   "version": "1.0.0",
-  "description": "A Discord bot that joins a voice channel and posts live transcripts of what people say.",
+  "description": "Emaq — a Discord bot that joins a voice channel and posts live transcripts of what people say.",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
