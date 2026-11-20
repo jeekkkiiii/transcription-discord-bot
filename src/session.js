@@ -4,11 +4,13 @@ import {
   EndBehaviorType,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
+import { randomUUID } from 'node:crypto';
 import prism from 'prism-media';
 import { config } from './config.js';
 import { DISCORD_CHANNELS, DISCORD_RATE, downmixAndResample, pcmDurationMs, rms, toWav } from './audio.js';
 import { transcribe, isLikelyHallucination } from './transcribe.js';
 import { SpeakerBatcher } from './batcher.js';
+import { WebsiteWebhook } from './webhook.js';
 
 const MIN_RMS = 0.005;
 
@@ -24,6 +26,8 @@ export class TranscriptionSession {
     this.postQueue = Promise.resolve();
     this.names = new Map();
     this.stopped = false;
+    this.id = randomUUID();
+    this.website = new WebsiteWebhook();
     this.batcher = new SpeakerBatcher({
       targetMs: config.batchTargetMs,
       maxWaitMs: config.batchMaxWaitMs,
@@ -62,6 +66,14 @@ export class TranscriptionSession {
 
     this.connection.receiver.speaking.on('start', (userId) => this.listen(userId));
     sessions.set(this.guild.id, this);
+    this.startedAt = new Date();
+    this.website.send({
+      type: 'session.started',
+      sessionId: this.id,
+      startedAt: this.startedAt.toISOString(),
+      guild: { id: this.guild.id, name: this.guild.name },
+      voiceChannel: { id: this.voiceChannel.id, name: this.voiceChannel.name },
+    });
   }
 
   stop() {
@@ -72,7 +84,13 @@ export class TranscriptionSession {
     }
     sessions.delete(this.guild.id);
     // Let in-flight audio streams finish, then transcribe whatever is still buffered.
-    setTimeout(() => this.batcher.flushAll(), 500);
+    setTimeout(() => {
+      this.batcher.flushAll();
+      if (!this.startedAt) return; // never fully connected
+      this.postQueue.then(() =>
+        this.website.send({ type: 'session.ended', sessionId: this.id, endedAt: new Date().toISOString() }),
+      );
+    }, 500);
   }
 
   async displayName(userId) {
@@ -136,9 +154,18 @@ export class TranscriptionSession {
         if (!result) return;
         const [{ name, bot }, text] = result;
         if (bot || isLikelyHallucination(text)) return;
-        const time = `<t:${Math.floor(startedAt.getTime() / 1000)}:T>`;
-        const line = `${time} **${escapeMarkdown(name)}**: ${text}`;
-        await this.textChannel.send({ content: line.slice(0, 2000), allowedMentions: { parse: [] } });
+        this.website.send({
+          type: 'transcript.line',
+          sessionId: this.id,
+          speaker: { id: userId, name },
+          text,
+          spokenAt: startedAt.toISOString(),
+        });
+        if (config.postToDiscord) {
+          const time = `<t:${Math.floor(startedAt.getTime() / 1000)}:T>`;
+          const line = `${time} **${escapeMarkdown(name)}**: ${text}`;
+          await this.textChannel.send({ content: line.slice(0, 2000), allowedMentions: { parse: [] } });
+        }
       })
       .catch((err) => console.error('Failed to post transcript:', err));
   }

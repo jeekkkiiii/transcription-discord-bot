@@ -39,6 +39,29 @@ When the bot starts it prints an **invite link** in the console. Open it, pick y
 
 (You can also build the link yourself: `https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot+applications.commands&permissions=1051648`.)
 
+## Sending transcripts to your website
+
+Set `WEBSITE_WEBHOOK_URL` and Emaq will `POST` JSON to that address as the session happens, in order:
+
+```jsonc
+// when /join connects
+{ "type": "session.started", "sessionId": "8c1e…", "startedAt": "2026-11-21T19:00:03.120Z",
+  "guild": { "id": "…", "name": "Our Server" }, "voiceChannel": { "id": "…", "name": "D&D" }, "sentAt": "…" }
+
+// for each transcribed chunk
+{ "type": "transcript.line", "sessionId": "8c1e…", "speaker": { "id": "…", "name": "Alex" },
+  "text": "I cast fireball at the goblins.", "spokenAt": "2026-11-21T19:04:12.000Z", "sentAt": "…" }
+
+// after /leave (or everyone leaves)
+{ "type": "session.ended", "sessionId": "8c1e…", "endedAt": "…", "sentAt": "…" }
+```
+
+Your site should reply with any `2xx`. On network errors, `429` or `5xx`, Emaq retries a few times.
+
+If you set `WEBSITE_WEBHOOK_SECRET`, each request has an `X-Emaq-Signature: sha256=<hex>` header: the HMAC-SHA256 of the raw request body using that secret. Check it before saving anything, so strangers can't post fake lines to your page.
+
+Set `POST_TO_DISCORD=false` to send transcripts only to the website.
+
 ## Notes
 
 - **Privacy:** the bot announces that the call is being transcribed when it joins. Let people in your server know before using it — audio clips are sent to whichever transcription API you configure.

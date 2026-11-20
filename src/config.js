@@ -23,6 +23,14 @@ export const config = {
     prompt: process.env.TRANSCRIBE_PROMPT || null,
   },
 
+  website: {
+    // Where to POST transcript events. Leave empty to only post in Discord.
+    url: process.env.WEBSITE_WEBHOOK_URL || null,
+    secret: process.env.WEBSITE_WEBHOOK_SECRET || null,
+  },
+  // Set to "false" to stop posting transcript lines in the Discord channel.
+  postToDiscord: process.env.POST_TO_DISCORD !== 'false',
+
   // How long someone must be quiet before their utterance is sent off to be transcribed.
   silenceMs: Number(process.env.SILENCE_MS || 1000),
   // Clips shorter than this are ignored (coughs, clicks, keyboard noise).
