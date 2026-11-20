@@ -8,6 +8,7 @@ import prism from 'prism-media';
 import { config } from './config.js';
 import { DISCORD_CHANNELS, DISCORD_RATE, downmixAndResample, pcmDurationMs, rms, toWav } from './audio.js';
 import { transcribe, isLikelyHallucination } from './transcribe.js';
+import { SpeakerBatcher } from './batcher.js';
 
 const MIN_RMS = 0.005;
 
@@ -22,6 +23,12 @@ export class TranscriptionSession {
     // Clips are transcribed in parallel but posted in the order people finished speaking.
     this.postQueue = Promise.resolve();
     this.names = new Map();
+    this.stopped = false;
+    this.batcher = new SpeakerBatcher({
+      targetMs: config.batchTargetMs,
+      maxWaitMs: config.batchMaxWaitMs,
+      onFlush: (userId, mono, startedAt) => this.post(userId, mono, startedAt),
+    });
   }
 
   async start() {
@@ -58,10 +65,14 @@ export class TranscriptionSession {
   }
 
   stop() {
+    if (this.stopped) return;
+    this.stopped = true;
     if (this.connection && this.connection.state.status !== VoiceConnectionStatus.Destroyed) {
       this.connection.destroy();
     }
     sessions.delete(this.guild.id);
+    // Let in-flight audio streams finish, then transcribe whatever is still buffered.
+    setTimeout(() => this.batcher.flushAll(), 500);
   }
 
   async displayName(userId) {
@@ -104,11 +115,16 @@ export class TranscriptionSession {
   }
 
   handleClip(userId, pcm) {
-    if (pcmDurationMs(pcm) < config.minClipMs) return;
+    const durationMs = pcmDurationMs(pcm);
+    if (durationMs < config.minClipMs) return;
     const mono = downmixAndResample(pcm);
     if (rms(mono) < MIN_RMS) return;
+    const startedAt = new Date(Date.now() - durationMs - config.silenceMs);
+    this.batcher.add(userId, mono, durationMs, startedAt);
+    if (this.stopped) this.batcher.flush(userId);
+  }
 
-    const startedAt = new Date();
+  post(userId, mono, startedAt) {
     const job = Promise.all([this.displayName(userId), transcribe(toWav(mono))]).catch((err) => {
       console.error(err);
       return null;

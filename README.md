@@ -14,7 +14,7 @@ Emaq is a Discord bot that joins your voice channel and posts a live transcript 
 
 ## Setup
 
-You need **Node.js 22.12+** and an API key for a speech-to-text service (OpenAI by default; Groq or any OpenAI-compatible Whisper server also works).
+You need **Node.js 22.12+** and an API key for a speech-to-text service. The example config uses **Groq's free tier** (sign up at <https://console.groq.com>); OpenAI or any OpenAI-compatible Whisper server also works.
 
 ### 1. Create the bot in Discord
 
@@ -42,7 +42,9 @@ When the bot starts it prints an **invite link** in the console. Open it, pick y
 ## Notes
 
 - **Privacy:** the bot announces that the call is being transcribed when it joins. Let people in your server know before using it — audio clips are sent to whichever transcription API you configure.
-- **Cost:** you only pay for speech. With OpenAI's `gpt-4o-mini-transcribe` that's roughly $0.18 per hour of people talking.
+- **Free tier limits:** Groq's free tier allows 20 requests/minute and 2,000/day. Emaq groups each speaker's talking into ~20-second clips (`BATCH_TARGET_MS`), so a 4–5 hour session with 5 players uses roughly 1,000 requests. The trade-off is that lines show up up to a minute late and can hold a few sentences. If the API says "slow down", Emaq waits and retries instead of dropping lines.
+- **Fantasy names:** put your character names, NPCs and places in `TRANSCRIBE_PROMPT` so the model spells them right.
+- **Paid option:** OpenAI's `gpt-4o-mini-transcribe` is roughly $0.18 per hour of people talking, with no practical limits.
 - **Hosting:** the bot must stay running to be online. Any always-on machine works (a home PC, a Raspberry Pi, or a small VPS / Railway / Fly.io instance).
 - Uses `@discordjs/voice` 0.19, which supports Discord's end-to-end encrypted voice (DAVE), now required for voice bots.
 - Run the tests with `npm test`.
