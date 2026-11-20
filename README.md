@@ -2,7 +2,7 @@
 
 Emaq is a Discord bot that joins your voice channel and posts a live transcript of what everyone says into a text channel:
 
-> 21:04:12 **Jack**: okay are we starting the raid now or after dinner
+> 21:04:12 **Alex**: okay are we starting the raid now or after dinner
 > 21:04:15 **Sam**: after dinner, I need ten minutes
 
 ## Commands
